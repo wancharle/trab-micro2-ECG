@@ -114,12 +114,10 @@ void integerToLcd(int integer )
 {
     unsigned char thousands,hundreds,tens,ones;
     thousands = integer / 1000;
-
-    lcdData(thousands + 0x30);
-
+    if (thousands)lcdData(thousands + 0x30);else lcdData(' ');
 	 hundreds = ((integer - thousands*1000)-1) / 100;
 
-	lcdData( hundreds + 0x30);
+	if (hundreds)lcdData( hundreds + 0x30);else lcdData(' ');
     tens=(integer%100)/10;
 
 	lcdData( tens + 0x30);

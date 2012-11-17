@@ -19,7 +19,6 @@ int meio =0;
 
 
 
-
 int main(void) 
 {
     WDTCTL = WDTPW  + WDTHOLD; // Para o WDT(Wath dog Timer)
@@ -31,16 +30,18 @@ int main(void)
     // configurando conversor AD para trabalhar com tensao no pino 4
     ADC10CTL0 &= ~ENC;
 	ADC10CTL1 = 4 << 12;
-    ADC10CTL0 = ADC10ON + ENC + ADC10SHT_0;
+    ADC10CTL0 = SREF_0+ADC10ON + ENC + ADC10SHT_0;
 	
     // configurando LED
     P1DIR |= BIT6;  // EN saida
+    P1DIR |= BIT0;  // EN saida
     P1DIR |= BIT7;  // RS saida
     P2DIR = 0xFF; 
     P1OUT = 0x00;
 	lcdinit();
     prints("Batimentos ");
-
+    gotoXy(5,1);
+    prints("BPM");
     
     // Configurando interrupcao
     TACCR0 = 32000;  //   16 MHz / 32000 = 500 Hz
@@ -57,23 +58,6 @@ int main(void)
     return 0;
 }
 
-int batimentos(){
-    int d1,d2;
-    d1 = max1-min1;
-    d2 = max2-min2;
-    max2=max1;
-    min2=min1;
-    float r;
-    r = d2/(float)d1;
-    
-    if (r>1.7){
-        bpm = 60+(1/r)*27;
-    }else{
-        bpm= 0;
-         }
-     return bpm;
-}
-
 unsigned int lerConversorAD(){
     ADC10CTL0 |= ADC10SC;
 	while(ADC10CTL1 & ADC10BUSY);
@@ -82,10 +66,16 @@ unsigned int lerConversorAD(){
 
 
 int calcula_freq(){
+
     float f; 
-    f = vales/2*500/350;
+    f = 60*500/periodos;
+
     vales=0;
-    return f;
+    if (f<0 )f=0;
+    if (f>200){
+        P1OUT |= BIT0;    
+    }
+    return (int)f;
 }
 
 interrupt(TIMER0_A1_VECTOR) ta1_isr(void)
@@ -99,37 +89,7 @@ interrupt(TIMER0_A1_VECTOR) ta1_isr(void)
             calibrando=2; 
             meio = (max1-min1)/2.0 + min1;        
         }
-    }else{
-        if (periodos> 350) { // tempo de amostragem 350 interrupcoes.
-            gotoXy(9,1); 
-            integerToLcd(calcula_freq());
-            prints("Hz");
-            gotoXy(9,1);
-            prints("  ");
-            
-            gotoXy(0,1);
-            if (toogle ==1){
-                integerToLcd(batimentos());
-                if (bpm > 0){
-                    prints(" S2");
-                }else{
-                    prints("   ");
-                }
-
-                toogle = 0;
-                gotoXy(0,1);
-                prints("  ");
-            }else{
-                if (batimentos()){
-                    prints("       ");
-                }
-                toogle =1;
-            }
-
-            periodos = 0;
-        }
     }
-
 
     dado = lerConversorAD(); 
     
@@ -150,15 +110,25 @@ interrupt(TIMER0_A1_VECTOR) ta1_isr(void)
         if (dado > max2)max2=dado; 
         if (dado < min2)min2=dado;
         
-        if ((subindo == 0) && (dado > meio)){
+        if ((subindo == 0) && (dado > 600) && (periodos > 80) ){
             subindo = 1; // agora esta no vale de cima.
-            vales+=1;
+
+                P1OUT &= ~BIT0;    
+                gotoXy(0,1); 
+                integerToLcd(calcula_freq());
+                
+                periodos = 0;
         }else {
-            if ((subindo == 1) && ( dado < meio)){
+            if ((subindo == 1) && ( dado < meio) && (periodos>80)){
                 subindo = 0; // agor a esta no vale de baixo.
-                vales+=1;
             }
         }
+        if (periodos >1200){
+               P1OUT &= ~BIT0; // apaga led vermelho    
+               gotoXy(0,1); 
+               integerToLcd(0);
+              
+       }
     
     }
     
