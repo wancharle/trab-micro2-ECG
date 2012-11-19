@@ -8,7 +8,6 @@
 
 void lcdcmd(unsigned char Data)
 {
-
 P1OUT &= ~RS; //because sending command
 P1OUT  &=~EN;
 
@@ -23,9 +22,8 @@ P2OUT  |= (Data & 0x0F);
 P1OUT  |=EN;
 waitlcd(2);
 P1OUT  &=~EN;
-
-
 }
+
 void lcdData(unsigned char l)
 {
 P1OUT |=RS;  //because sending data
@@ -41,8 +39,6 @@ P2OUT  |= (l & 0x0F);
 P1OUT  |=EN;
 waitlcd(2);
 P1OUT  &=~EN;
-
-
 
 }
 
@@ -92,7 +88,6 @@ void waitlcd(volatile unsigned int x)
 
 void prints(char *s)
   {
-
     while (*s)
       {
 	 lcdData(*s);
@@ -102,11 +97,11 @@ void prints(char *s)
 
 void gotoXy(unsigned char  x,unsigned char y)
 {
- if(x<40)
- {
-  if(y) x |= 0x40;
-  x |=0x80;
-  lcdcmd(x);
+  if(x<40)
+  {
+     if(y) x |= 0x40;
+     x |=0x80;
+     lcdcmd(x);
   }
 
 }
@@ -115,7 +110,7 @@ void integerToLcd(int integer )
     unsigned char thousands,hundreds,tens,ones;
     thousands = integer / 1000;
     if (thousands)lcdData(thousands + 0x30);else lcdData(' ');
-	 hundreds = ((integer - thousands*1000)-1) / 100;
+	hundreds = ((integer - thousands*1000)-1) / 100;
 
 	if (hundreds)lcdData( hundreds + 0x30);else lcdData(' ');
     tens=(integer%100)/10;
